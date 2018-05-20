@@ -1,0 +1,128 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define PAGELEN 20
+#define LINELEN 512
+void do_more(FILE*);
+int get_input(FILE*,int,int);
+int get_content_weight(FILE*);
+void isSearchAvailable(File*,char*);
+int main(int argc, char *argv[])
+{
+  if(argc==1)
+  {
+    do_more(stdin);
+  }
+  int i=0;
+  FILE * fp;
+  while(++i<argc)
+  {
+    fp= fopen(argv[i],"r");
+    if (fp== NULL)
+    {
+      perror("Can't open file");
+      exit(1);
+    }
+    do_more(fp);
+    fclose(fp);
+  }
+}
+void do_more(FILE *fp)
+{
+  int num_of_lines=0;
+  int rv;
+  int CUR_POS;
+  char strSearch[LINELEN];
+  char buffer[LINELEN];
+  int displayable_lines = get_content_weight(fp);
+  int displayed_lines = PAGELEN;
+  FILE* fp_tty = fopen("/dev//tty","r");
+  while(fgets(buffer , LINELEN,fp))
+  {
+    fputs(buffer,stdout);
+    num_of_lines++;
+    if(num_of_lines == PAGELEN)
+    {
+      rv=get_input(fp_tty,displayable_lines,displayed_lines);
+      if(displayable_lines<PAGELEN)
+      {
+        displayed_lines = displayable_lines;
+      }
+      if(rv == 0)
+      {
+        printf("\033[1A \033[2K \033[1G");
+        break;
+      }
+      else if(rv==1)
+      {
+        displayed_lines+=num_of_lines;
+        printf("\033[1A \033[2K \033[1G");
+        num_of_lines-=PAGELEN;
+      }
+      else if(rv==2)
+      {
+        displayed_lines++;
+        printf("\033[1A \033[2K \033[1G");
+        num_of_lines-=1;
+      }
+      else if(rv==3)
+      {
+				printf("\033[1K \033[1G");
+				printf("\033[1B \033[1G");
+				printf("What you want to search out?/");
+				fgets(strSearch,LINELEN,fp_tty);
+				strSearch[strlen(strSearch)-1]='\0'; // placing NULL
+				printf("\033[1A\033[2K \033[1G");
+				CUR_POS = ftell(fp); //getting current offset
+				isSearchAvailable(fp,strSearch);
+				fseek(fp, CUR_POS, SEEK_SET); // get pointing to start  position
+			}
+      else if(rv==4)
+      {
+        printf("\033[1A \033[2K \033[1G");
+        break;
+      }
+    }
+  }
+}
+int get_input(FILE *ipf, int total_lines, int displayed_ratio)
+{
+  double dRatio = (double)displayed_ratio/total_lines*100;
+  printf("\033[7m --more--(%.0f%%) \033[m",dRatio);
+  int c;
+  system("stty -icanon");
+  system("stty kill 'q' ");
+  c=getc(ipf);
+  if(c=='q')
+    return 0;
+  if(c==' ')
+    return 1;
+  if(c=='\n')
+    return 2;
+  if(c=='/')
+    return 3;
+  return 4;
+}
+int get_content_weight(FILE *ipf)
+{
+  int lines = 0;
+  char buffer[LINELEN];
+  while(fgets(buffer,LINELEN,ipf))
+  {
+    lines++;
+  }
+  fseek(ipf,0,SEEK_SET);
+  return lines;
+}
+void isSearchAvailable(FILE *ifp,char *strSearch)
+{
+	char buffer[LINELEN];
+	while(fgets(buffer,LINELEN,ifp))
+  {
+   		 if(strstr(buffer,strSearch) != NULL)
+    		 {
+    			    printf("\033[7m%s\033[m",buffer);
+    		 }
+	}
+	printf("\n");
+	fseek(ifp,0,SEEK_SET);
+}
