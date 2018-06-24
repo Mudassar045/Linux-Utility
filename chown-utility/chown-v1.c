@@ -3,15 +3,14 @@
   DESCRIPTION: This version of CHOWN handle only single file or directory
   USAGE: Here's the list of cases which handle this version
 
-  case 1:  ./chown-v?.c user:group filename/directory  (To change user and group)
-           
-  case 2:  ./chown-v?.c user      filename/directory  (To change user only)
+        case 1:  ./chown-v?.c user:group filename/directory  (To change user and group)
+                
+        case 2:  ./chown-v?.c user      filename/directory  (To change user only)
+                
+        case 3:  ./chown-v?.c     :group filename/directory  (To change group only)
+                
+        case 4:  ./chown-v?.c     :      filename/directory  (Nothing will happen)
             
-  case 3:  ./chown-v?.c     :group filename/directory  (To change group only)
-            
-  case 4:  ./chown-v?.c     :      filename/directory  (Nothing will happen)
-            
-
 */
 #include <stdio.h>
 #include <stdlib.h>

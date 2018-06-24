@@ -116,9 +116,19 @@ int main(int argc, char *argv[])
         // checking file exist
         if (isExist(source) == 0 && getType(tempstat.st_mode) == 'd')
         {
-            char **infoToken = tokenize(argv[1]);
-            userName = infoToken[0];
-            groupName = infoToken[1];
+            char **infoToken = {NULL};
+            if (strcmp(argv[1], ":") != 0)
+            {
+                infoToken = tokenize(argv[1]);
+                userName = infoToken[0];
+                groupName = infoToken[1];
+            }
+            if (IS_ONLY_GROUP == 1 && infoToken[0] != NULL)
+            {
+                printf("%d", IS_ONLY_GROUP);
+                groupName = userName;
+                userName = NULL;
+            }
             // Handling cases
             // visit: https://www.computerhope.com/unix/uchown.htm
             if (userName != NULL && groupName == NULL)
@@ -146,11 +156,21 @@ int main(int argc, char *argv[])
                 doChownOnDir(source, uid, gid);
             }
         }
-        else if (isExist(source) == 0 )
+        else if (isExist(source) == 0)
         {
-            char **infoToken = tokenize(argv[1]);
-            userName = infoToken[0];
-            groupName = infoToken[1];
+            char **infoToken = {NULL};
+            if (strcmp(argv[1], ":") != 0)
+            {
+                infoToken = tokenize(argv[1]);
+                userName = infoToken[0];
+                groupName = infoToken[1];
+            }
+            if (IS_ONLY_GROUP == 1 && infoToken[0] != NULL)
+            {
+                printf("%d", IS_ONLY_GROUP);
+                groupName = userName;
+                userName = NULL;
+            }
             // Handling cases
             // visit: https://www.computerhope.com/unix/uchown.htm
             if (userName != NULL && groupName == NULL)
@@ -184,7 +204,7 @@ int main(int argc, char *argv[])
             exit(0);
         }
     }
-    else if (argc >= 4 && strcmp(argv[3],"-R")!=0)
+    else if (argc >= 4 && strcmp(argv[3], "-R") != 0)
     {
         for (int i = 2; i < argc; i++)
         {
@@ -336,23 +356,27 @@ char **tokenize(char *arg)
     return arglist;
 }
 
-void doChownOnDir(const char *filepath,uid_t uid, gid_t gid)
+void doChownOnDir(const char *filepath, uid_t uid, gid_t gid)
 {
     DIR *dir;
     struct dirent *entry;
     if (!(dir = opendir(filepath)))
         return;
-     doChown(filepath,uid,gid); // on directory
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_DIR) {
+    doChown(filepath, uid, gid); // on directory
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (entry->d_type == DT_DIR)
+        {
             char path[1024];
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                 continue;
             snprintf(path, sizeof(path), "%s/%s", filepath, entry->d_name);
-            doChownOnDir(path,uid,gid);
-        } else {
+            doChownOnDir(path, uid, gid);
+        }
+        else
+        {
             snprintf(mypath, sizeof(mypath), "%s/%s", filepath, entry->d_name);
-            doChown(mypath,uid,gid); // on directory/ies content
+            doChown(mypath, uid, gid); // on directory/ies content
         }
     }
     closedir(dir);

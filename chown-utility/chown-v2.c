@@ -3,13 +3,13 @@
   DESCRIPTION: This version of CHOWN handles single file and also recursive implementation on sub directories
   USAGE: Here's the list of cases which handle this version
   
-  case 1:  ./chown-v?.c user:group filename/directory -R (To change user and group)
-           
-  case 2:  ./chown-v?.c user      filename/directory -R (To change user only)
-            
-  case 3:  ./chown-v?.c     :group filename/directory -R (To change group only)
-            
-  case 4:  ./chown-v?.c     :      filename/directory -R (Nothing will happen)
+        case 1:  ./chown-v?.c user:group filename/directory -R (To change user and group)
+                
+        case 2:  ./chown-v?.c user      filename/directory -R (To change user only)
+                
+        case 3:  ./chown-v?.c     :group filename/directory -R (To change group only)
+                
+        case 4:  ./chown-v?.c     :      filename/directory -R (Nothing will happen)
 
   OPTION: -R (as the 4th cmd agrument to ./chown-v?.c)
 */
@@ -36,10 +36,10 @@ char mypath[1024];
 int IS_ONLY_GROUP = 0;
 int main(int argc, char *argv[])
 {
-        char *option;
-        char *source;
-        char *userName;
-        char *groupName;
+        char *option=NULL;
+        char *source=NULL;
+        char *userName=NULL;
+        char *groupName=NULL;
 
         if (argc == 1 || argc == 2)
         {
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
                         exit(0);
                 }
         }
-        else if (argc == 4)
+        else if (argc == 4 & strcp(argv[3],"-R")==0)
         {
                 source = argv[2];
                 option = argv[3];
@@ -109,11 +109,21 @@ int main(int argc, char *argv[])
                 if(isExist(source)==0)
                    stat(source,&tempstat);
                 // checking file exist
-                if (isExist(source) == 0 && strcmp(option,"-R")==0 && getType(tempstat.st_mode)=='d')
+                if (isExist(source) == 0 &&  getType(tempstat.st_mode)=='d')
                 {
-                        char **infoToken = tokenize(argv[1]);
-                        userName = infoToken[0];
-                        groupName = infoToken[1];
+                        char **infoToken = {NULL};
+                        if(strcmp(argv[1],":")!=0)
+                        {
+                                infoToken = tokenize(argv[1]);
+                                userName = infoToken[0];
+                                groupName = infoToken[1];
+                        }
+                        if (IS_ONLY_GROUP == 1 && infoToken[0]!=NULL)
+                        {
+                                printf("%d",IS_ONLY_GROUP);
+                                groupName = userName;
+                                userName = NULL;
+                        }
                         // Handling cases
                         // visit: https://www.computerhope.com/unix/uchown.htm
                         if (userName != NULL && groupName == NULL)
@@ -141,11 +151,21 @@ int main(int argc, char *argv[])
                                 doChownOnDir(source, uid, gid);
                         }
                 }
-                else if (isExist(source) == 0 && strcmp(option,"-R")==0)
+                else if (isExist(source) == 0 )
                 {
-                        char **infoToken = tokenize(argv[1]);
-                        userName = infoToken[0];
-                        groupName = infoToken[1];
+                        char **infoToken = {NULL};
+                        if(strcmp(argv[1],":")!=0)
+                        {
+                                infoToken = tokenize(argv[1]);
+                                userName = infoToken[0];
+                                groupName = infoToken[1];
+                        }
+                        if (IS_ONLY_GROUP == 1 && infoToken[0]!=NULL)
+                        {
+                                printf("%d",IS_ONLY_GROUP);
+                                groupName = userName;
+                                userName = NULL;
+                        }
                         // Handling cases
                         // visit: https://www.computerhope.com/unix/uchown.htm
                         if (userName != NULL && groupName == NULL)
