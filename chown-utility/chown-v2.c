@@ -1,3 +1,18 @@
+/*
+  VERSION NO. 2
+  DESCRIPTION: This version of CHOWN handles single file and also recursive implementation on sub directories
+  USAGE: Here's the list of cases which handle this version
+  
+  case 1:  ./chown-v?.c user:group filename/directory -R (To change user and group)
+           
+  case 2:  ./chown-v?.c user      filename/directory -R (To change user only)
+            
+  case 3:  ./chown-v?.c     :group filename/directory -R (To change group only)
+            
+  case 4:  ./chown-v?.c     :      filename/directory -R (Nothing will happen)
+
+  OPTION: -R (as the 4th cmd agrument to ./chown-v?.c)
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,12 +33,13 @@ char getType(mode_t);
 char **tokenize(char *arg);
 void doChownOnDir(const char *filepath,uid_t uid, gid_t gid);
 char mypath[1024];
+int IS_ONLY_GROUP = 0;
 int main(int argc, char *argv[])
 {
         char *option;
         char *source;
-        char *userfilepath;
-        char *groupfilepath;
+        char *userName;
+        char *groupName;
 
         if (argc == 1 || argc == 2)
         {
@@ -39,24 +55,34 @@ int main(int argc, char *argv[])
                 // checking file exist
                 if (isExist(source) == 0)
                 {
-                        char **infoToken = tokenize(argv[1]);
-                        userfilepath = infoToken[0];
-                        groupfilepath = infoToken[1];
+                        char **infoToken = {NULL};
+                        if(strcmp(argv[1],":")!=0)
+                        {
+                                infoToken = tokenize(argv[1]);
+                                userName = infoToken[0];
+                                groupName = infoToken[1];
+                        }
+                        if (IS_ONLY_GROUP == 1 && infoToken[0]!=NULL)
+                        {
+                                printf("%d",IS_ONLY_GROUP);
+                                groupName = userName;
+                                userName = NULL;
+                        }
                         // Handling cases
                         // visit: https://www.computerhope.com/unix/uchown.htm
-                        if (userfilepath != NULL && groupfilepath == NULL)
+                        if (userName != NULL && groupName == NULL)
                         {
-                                // case1 "user:" (change only user)
-                                uid_t uid = getUID(userfilepath);
+                                // case1 "user" (change only user)
+                                uid_t uid = getUID(userName);
                                 doChown(source, uid, -1);
                         }
-                        else if (userfilepath == NULL && groupfilepath != NULL)
+                        else if (userName == NULL && groupName != NULL)
                         {
                                 // case2 ":group" (change only group)
-                                gid_t gid = getGID(groupfilepath);
+                                gid_t gid = getGID(groupName);
                                 doChown(source, -1, gid);
                         }
-                        else if (userfilepath == NULL && groupfilepath == NULL)
+                        else if (userName == NULL && groupName == NULL)
                         {
                                 // case3 ":" (Do nothing)
                                 doChown(source, -1, -1);
@@ -64,8 +90,8 @@ int main(int argc, char *argv[])
                         else
                         {
                                 // case4 "user:group" (change user and group)
-                                uid_t uid = getUID(userfilepath);
-                                gid_t gid = getGID(groupfilepath);
+                                uid_t uid = getUID(userName);
+                                gid_t gid = getGID(groupName);
                                 doChown(source, uid, gid);
                         }
                 }
@@ -86,23 +112,23 @@ int main(int argc, char *argv[])
                 if (isExist(source) == 0 && strcmp(option,"-R")==0 && getType(tempstat.st_mode)=='d')
                 {
                         char **infoToken = tokenize(argv[1]);
-                        userfilepath = infoToken[0];
-                        groupfilepath = infoToken[1];
+                        userName = infoToken[0];
+                        groupName = infoToken[1];
                         // Handling cases
                         // visit: https://www.computerhope.com/unix/uchown.htm
-                        if (userfilepath != NULL && groupfilepath == NULL)
+                        if (userName != NULL && groupName == NULL)
                         {
                                 // case1 "user:" (change only user)
-                                uid_t uid = getUID(userfilepath);
+                                uid_t uid = getUID(userName);
                                 doChownOnDir(source, uid, -1);
                         }
-                        else if (userfilepath == NULL && groupfilepath != NULL)
+                        else if (userName == NULL && groupName != NULL)
                         {
                                 // case2 ":group" (change only group)
-                                gid_t gid = getGID(groupfilepath);
+                                gid_t gid = getGID(groupName);
                                 doChownOnDir(source, -1, gid);
                         }
-                        else if (userfilepath == NULL && groupfilepath == NULL)
+                        else if (userName == NULL && groupName == NULL)
                         {
                                 // case3 ":" (Do nothing)
                                 doChownOnDir(source, -1, -1);
@@ -110,10 +136,43 @@ int main(int argc, char *argv[])
                         else
                         {
                                 // case4 "user:group" (change user and group)
-                                uid_t uid = getUID(userfilepath);
-                                gid_t gid = getGID(groupfilepath);
+                                uid_t uid = getUID(userName);
+                                gid_t gid = getGID(groupName);
                                 doChownOnDir(source, uid, gid);
                         }
+                }
+                else if (isExist(source) == 0 && strcmp(option,"-R")==0)
+                {
+                        char **infoToken = tokenize(argv[1]);
+                        userName = infoToken[0];
+                        groupName = infoToken[1];
+                        // Handling cases
+                        // visit: https://www.computerhope.com/unix/uchown.htm
+                        if (userName != NULL && groupName == NULL)
+                        {
+                                // case1 "user:" (change only user)
+                                uid_t uid = getUID(userName);
+                                doChown(source, uid, -1);
+                        }
+                        else if (userName == NULL && groupName != NULL)
+                        {
+                                // case2 ":group" (change only group)
+                                gid_t gid = getGID(groupName);
+                                doChown(source, -1, gid);
+                        }
+                        else if (userName == NULL && groupName == NULL)
+                        {
+                                // case3 ":" (Do nothing)
+                                doChown(source, -1, -1);
+                        }
+                        else
+                        {
+                                // case4 "user:group" (change user and group)
+                                uid_t uid = getUID(userName);
+                                gid_t gid = getGID(groupName);
+                                doChown(source, uid, gid);
+                        }
+
                 }
                 else
                 {
@@ -196,13 +255,16 @@ char **tokenize(char *arg)
         char *cp = arg; //pos in string
         char *start;
         int len;
+        // Check for 'is group only' as second argument
+        if (cp[0] == ':')
+                IS_ONLY_GROUP = 1;
         while (*cp != '\0')
         {
                 while (*cp == ':' || *cp == '\t' || *cp == ' ') //skip leading spaces
                         cp++;
-                start = cp; //start of the userfilepath
+                start = cp; //start of the userName
                 len = 1;
-                //find the end of agrgument or groupfilepath
+                //find the end of agrgument or groupName
                 while (*++cp != '\0' && !(*cp == ' ' || *cp == '\t' || *cp == ':'))
                         len++;
                 strncpy(arglist[argnum], start, len);
@@ -218,17 +280,17 @@ void doChownOnDir(const char *filepath,uid_t uid, gid_t gid)
     struct dirent *entry;
     if (!(dir = opendir(filepath)))
         return;
+     doChown(filepath,uid,gid); // on directory
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_type == DT_DIR) {
             char path[1024];
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                 continue;
             snprintf(path, sizeof(path), "%s/%s", filepath, entry->d_name);
-            doChown(path,uid,gid);
             doChownOnDir(path,uid,gid);
         } else {
             snprintf(mypath, sizeof(mypath), "%s/%s", filepath, entry->d_name);
-            doChown(mypath,uid,gid);
+            doChown(mypath,uid,gid); // on directory/ies content
         }
     }
     closedir(dir);

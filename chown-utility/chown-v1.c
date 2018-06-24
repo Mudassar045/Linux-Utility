@@ -1,3 +1,18 @@
+/*
+  VERSION NO.1
+  DESCRIPTION: This version of CHOWN handle only single file or directory
+  USAGE: Here's the list of cases which handle this version
+
+  case 1:  ./chown-v?.c user:group filename/directory  (To change user and group)
+           
+  case 2:  ./chown-v?.c user      filename/directory  (To change user only)
+            
+  case 3:  ./chown-v?.c     :group filename/directory  (To change group only)
+            
+  case 4:  ./chown-v?.c     :      filename/directory  (Nothing will happen)
+            
+
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,12 +30,13 @@ gid_t getGID(const char *group_name);
 uid_t getUID(const char *user_name);
 char getType(int mode_t);
 char **tokenize(char *arg);
+int IS_ONLY_GROUP = 0;
 int main(int argc, char *argv[])
 {
-        char *option;
-        char *source;
-        char *userName;
-        char *groupName;
+        char *option=NULL;
+        char *source=NULL;
+        char *userName=NULL;
+        char *groupName=NULL;
 
         if (argc == 1 || argc == 2)
         {
@@ -33,11 +49,22 @@ int main(int argc, char *argv[])
         else if (argc == 3)
         {
                 source = argv[2];
+                // checking file exist
                 if (isExist(source) == 0)
                 {
-                        char **infoToken = tokenize(argv[1]);
-                        userName = infoToken[0];
-                        groupName = infoToken[1];
+                        char **infoToken = {NULL};
+                        if(strcmp(argv[1],":")!=0)
+                        {
+                                infoToken = tokenize(argv[1]);
+                                userName = infoToken[0];
+                                groupName = infoToken[1];
+                        }
+                        if (IS_ONLY_GROUP == 1 && infoToken[0]!=NULL)
+                        {
+                                printf("%d",IS_ONLY_GROUP);
+                                groupName = userName;
+                                userName = NULL;
+                        }
                         // Handling cases
                         // visit: https://www.computerhope.com/unix/uchown.htm
                         if (userName != NULL && groupName == NULL)
@@ -100,10 +127,10 @@ void doChown(const char *file_path, uid_t uid, gid_t gid)
 {
         if (chown(file_path, uid, gid) == -1)
         {
-                fprintf(stderr, "chown: changing ownership of '%s': Operation not permitted\n",file_path);
+                fprintf(stderr, "chown: changing ownership of '%s': Operation not permitted\n", file_path);
                 exit(0);
         }
-} 
+}
 uid_t getUID(const char *user_name)
 {
         struct passwd *pwd;
@@ -151,8 +178,13 @@ char **tokenize(char *arg)
         char *cp = arg; //pos in string
         char *start;
         int len;
+        // Check for 'is group only' as second argument
+        if (cp[0] == ':')
+                IS_ONLY_GROUP = 1;
+
         while (*cp != '\0')
         {
+
                 while (*cp == ':' || *cp == '\t' || *cp == ' ') //skip leading spaces
                         cp++;
                 start = cp; //start of the username
